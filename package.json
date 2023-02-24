@@ -1,0 +1,33 @@
+{
+  "name": "bgmie_issues",
+  "version": "1.0.0",
+  "description": "A catalogue for the Battle Games in Middle Earth magazines and the figures that came with them.",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "node server.js",
+    "devStart": "nodemon server.js"
+  },
+  "keywords": [
+    "Lord of the rings",
+    "Middle Earth",
+    "Catalogue",
+    "Warhammer",
+    "Games Workshop"
+  ],
+  "author": "Jonno Witts",
+  "license": "ISC",
+  "dependencies": {
+    "@fastify/formbody": "^7.4.0",
+    "@fastify/static": "^6.9.0",
+    "@fastify/view": "^7.4.1",
+    "dotenv": "^16.0.3",
+    "fastify": "^4.13.0",
+    "handlebars": "^4.7.7",
+    "sqlite": "^4.1.2",
+    "sqlite3": "^5.1.4"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.20"
+  }
+}

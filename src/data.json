@@ -1,0 +1,7 @@
+{
+    "database": "sqlite.js",
+    "errorMessage": "Whoops! Error conntecting to the database",
+    "setupMessage": "Whoops! Looks like the database isn't setup yet"
+
+
+}

@@ -1,0 +1,8 @@
+form input, form label {
+    display: block;
+    max-width: 400px;
+}
+
+form input {
+    margin-bottom: 1rem;
+}

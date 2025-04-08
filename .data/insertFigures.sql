@@ -1,4 +1,5 @@
-INSERT INTO models(name, modelCounts) VALUES ('Moria Goblins', 12),
+INSERT INTO models(name, modelCount) VALUES 
+('Moria Goblins', 12),
 ('8 Elves and 4 Men of Gondor', 12),
 ('Frodo Baggins', 1),
 ('Uruk-hai', 10),

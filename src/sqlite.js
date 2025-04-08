@@ -6,13 +6,20 @@
 
 // Utilities we need
 const fs = require("fs");
+const fsPromises = require('node:fs/promises');
+const csvToJson = require("csvtojson");
 
 // Initialize the database
 const dbFile = "./.data/choices.db";
+const dbFigures = './.data/insertFigures.sql';
+const dbIssues = './.data/insertIssues.sql';
+const issueListCSV = './.data/BGiME_issue_list.csv';
 const exists = fs.existsSync(dbFile);
 const sqlite3 = require("sqlite3").verbose();
 const dbWrapper = require("sqlite");
 let db;
+
+
 
 /* 
 We're using the sqlite wrapper so that we can make async / await connections
@@ -30,6 +37,10 @@ dbWrapper
     try {
       // The async / await syntax lets us write the db operations in a way that won't block the app
       if (!exists) {
+        // Read contents of any scripts
+        const insertFiguresScript = fs.readFileSync(dbFigures).toString();
+        const insertIssuesScript = fs.readFileSync(dbIssues).toString();
+        
         // Database doesn't exist yet - create Choices and Log tables
         await db.run(
           "CREATE TABLE Choices (id INTEGER PRIMARY KEY AUTOINCREMENT, language TEXT, picks INTEGER)"
@@ -40,8 +51,17 @@ dbWrapper
         );
 
         await db.run(
-          "CREATE TABLE Issues (id INTEGER PRIMARY KEY AUTOINCREMENT, issueNumber TEXT, modelId INTEGER, FOREIGN KEY(modelId) REFERENCES Models(id))"
+          "CREATE TABLE Issues (id INTEGER PRIMARY KEY AUTOINCREMENT, issueNumber TEXT, modelId INTEGER, isSpecial BOOLEAN, FOREIGN KEY(modelId) REFERENCES Models(id))"
         );
+
+        await db.run(
+          "CREATE TABLE MagazineSection (id INTEGER PRIMARY KEY AUTOINCREMENT, section TEXT)"
+        )
+
+        
+        await db.run(
+          "CREATE TABLE Articles (id INTEGER PRIMARY KEY AUTOINCREMENT, article TEXT)"
+        )
 
 
         // Add default choices to table
@@ -49,12 +69,12 @@ dbWrapper
           "INSERT INTO Choices (language, picks) VALUES ('HTML', 0), ('JavaScript', 0), ('CSS', 0)"
         );
         
-        await db.run(
-          "INSERT INTO Models (id, name, modelCount) VALUES (1, 'Moria Goblins', 12), (2, 'Frodo', 1), (3, 'Last Alliance', 9)"
+        await db.exec(
+          insertFiguresScript
         );
 
-        await db.run(
-          "INSERT INTO Issues (issueNumber, modelId) VALUES ('1', 1), ('2', 2), ('3', 3)"
+        await db.exec(
+         insertIssuesScript
         );
 
 
@@ -64,8 +84,69 @@ dbWrapper
         );
       } else {
         // We have a database already - write Choices records to log for info
+        console.log('Database exists!')
         console.log(await db.all("SELECT * from Choices"));
         console.log(await db.all("SELECT i.issueNumber, m.name AS 'Model name', m.modelCount from Issues i JOIN Models m ON i.modelId = m.id"));
+
+        // Loop the issues and insert programmatically
+        
+        // Read clean CSV and convert to JSON
+        csvToJson().fromFile(issueListCSV)
+          .then(issuesObj => {
+            // Loop through resulting object and filter out any headings and not model entries
+            issuesObj
+              .filter(issue => issue['Figure(s)'] !== '' && issue['Figure(s)'] !== 'Figure(s)')
+              .map(async issue => {
+                // Find by model name in SQL to get ID
+                const figure = issue['Figure(s)']
+                
+                let modelId = await db.get(`SELECT * FROM Models WHERE name == "${figure}"`)
+                
+                if(modelId == undefined) {
+                  // Couldn't find a model with this name, try to expand the search...
+
+
+                  // Do specific search if 'Banner' or 'Warg' is included (is specific term)
+                  if(figure.split('Warg').length > 1) {
+                    debugger;
+                   
+                  }
+                  else if(figure.split('Banner').length > 1) {
+                    debugger;
+                  }
+
+                  // Split and loop words
+                  let reduceFigureNameArr = figure.split(' ')
+                  let i = 0;
+                  let figWord = null
+                  do {
+                    if(isNaN(reduceFigureNameArr[i])) {
+                      // Add checks for '+', 'Warriors', 'Riders'
+
+
+                      // Search the db for this value
+                      figWord = reduceFigureNameArr[i]
+                      modelId = await db.get(`SELECT * FROM Models WHERE name LIKE "%${figWord}%"`)
+
+                      // If rows = 1
+                      debugger
+                      break;
+                    }
+                    i++;
+                  } while (i < reduceFigureNameArr.length);
+                  
+                }
+                else {
+                  // insert into Issues(issueNumber, modelID, isSpecial)
+                }
+                
+              })
+          })
+          
+        
+        // Then => 
+        // Then => Pass model ID along with issue number and isSpecial
+        //         If issue number % 0 == false, isSpecial = true
 
         //If you need to remove a table from the database use this syntax
         //db.run("DROP TABLE Logs"); //will fail if the table doesn't exist
@@ -148,7 +229,11 @@ module.exports = {
         const insertIssue = await(db.run("INSERT INTO Issues(issueNumber, modelId) VALUES (?,?)", [
           issueNumber,
           insertModel.lastID
-        ]))
+        ]));
+
+        const pluralModels = modelCount > 1 ? true : false
+
+        console.info(`Inserted issue ${issueNumber} which came with ${modelCount} model${pluralModels ? 's':''}`)
         
         // Build the user data from the front-end and the current time into the sql query
         // await db.run("INSERT INTO Log (choice, time) VALUES (?, ?)", [

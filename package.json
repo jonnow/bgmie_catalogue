@@ -21,6 +21,7 @@
     "@fastify/formbody": "^7.4.0",
     "@fastify/static": "^6.9.0",
     "@fastify/view": "^7.4.1",
+    "csvtojson": "^2.0.10",
     "dotenv": "^16.0.3",
     "fastify": "^4.13.0",
     "handlebars": "^4.7.7",

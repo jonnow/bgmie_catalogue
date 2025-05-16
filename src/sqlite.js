@@ -63,45 +63,116 @@ dbWrapper
             .map(async issue => {
               // Find by model name in SQL to get ID
               const figure = issue['Figure(s)']
+              let readyForInsert = false
 
               let modelId = await db.get(`SELECT * FROM Models WHERE name == "${figure}"`)
+              if(modelId) {
+                readyForInsert = true;
+              }
 
-              if (modelId == undefined) {
+              if (!readyForInsert) {
                 // Couldn't find a model with this name, try to expand the search...
+                let cardInsert = false
 
+                // Do specific search if 'None' or 'Banner' or 'Warg' or 'Card' is included (is specific term).
+                if(figure.split('None').length > 1) {
+                  modelId = {id:null}
+                  // Check for a card:
+                  if (figure.split('Card').length > 1) {
+                    cardInsert = true
+                  }
+                  readyForInsert = true
+                  // end this figure check.
+                }
+                // Each need checking separately as there could be a banner and an insert
+                if (figure.split('Warg').length > 1 && !readyForInsert) {
+                  //debugger;
+                }
+                if (figure.split('Banner').length > 1 && !readyForInsert) {
+                  //debugger;
+                }
+                if (figure.split('Card').length > 1 && !readyForInsert) {
+                  cardInsert = true;
+                  // This won't work with 8 Gonder and 4 Elves mixed sprue.
 
-                // Do specific search if 'Banner' or 'Warg' is included (is specific term)
-                if (figure.split('Warg').length > 1) {
-                  debugger;
+                  
+
+                  if(!modelId) {
+                    // Step 1: Try to split off card and search for the model including the number of figures:
+                    const baseNameWithNumber = figure.split(' + Card')[0]
+                    modelId = await db.get(`SELECT * FROM Models WHERE name == "${baseNameWithNumber}"`)
+
+                    // If we still don't have a model ID...Try fuzzy search with out the preceeding number
+                    // Check if needing to remove number...this was causing errors without a check
+                    if(!modelId) {
+                      const baseNameWithoutNumber = baseNameWithNumber.match(/^(\d+)\s+(.+?)$/)
+
+                      // Check if base name without number actually exists, otherwise skip
+                      if(baseNameWithoutNumber) {
+                        modelId = await db.get(`SELECT * FROM Models WHERE name LIKE "%${baseNameWithoutNumber[2]}%"`)
+                      }
+                    }
+                  }
+
+                  if(!modelId) {
+                      const figureMatch = figure.match(/^(\d+)\s+(.+?)\s+\+\s+(.+)$/);
+                      try { 
+                        let numOfFigs = figureMatch[1]
+                        let nameOfFigs = figureMatch[2]
+                        modelId = await db.get(`SELECT * FROM Models WHERE name == "${nameOfFigs}"`)
+                      } catch (error) {
+                        
+                        // Need to check for other models here
+                        debugger
+                      }
+                    }
+
+                  /**
+                   * Check to see if this string (that contains the word 'card', has a figure in the DB already):
+                   * ^         Matches the beginning of the string.
+                   * (\d+)     Matches one or more digits and captures them in group 1 (the number).
+                   * \s+       Matches one or more whitespace characters.
+                   * (.+?)     Matches one or more of any character (non-greedy) and captures them in group 2 (the text between the number and the '+'). The ? makes it non-greedy, so it stops at the next part of the pattern.
+                   * \s+\+\s+  Matches one or more whitespace characters, followed by a literal + sign (which needs to be escaped with a backslash), followed by one or more whitespace characters.
+                   * (.+)      Matches one or more of any character until the end of the string and captures them in group 3 (everything after the '+').
+                   * $         Matches the end of the string.
+                   */
+                  
+
+                  // Update the DB if a fig ID has been found
+                  // Don't need to do the next part...
                 }
-                else if (figure.split('Banner').length > 1) {
-                  debugger;
+
+                // Still don't have a model to search for:
+                if(!modelId && !readyForInsert) {
+                  // Split and loop words
+                  let reduceFigureNameArr = figure.split(' ')
+                  let i = 0;
+                  let figWord = null
+                  do {
+                    if (isNaN(reduceFigureNameArr[i])) {
+                      // Add checks for '+', 'Warriors', 'Riders'
+                      
+                      
+                      // Search the db for this value
+                      figWord = reduceFigureNameArr[i]
+                      modelId = await db.get(`SELECT * FROM Models WHERE name LIKE "%${figWord}%"`)
+                      
+                      // If rows = 1
+                      break;
+                    }
+                    i++;
+                  } while (i < reduceFigureNameArr.length);
                 }
-                else if (figure.split('Card').length > 1) {
+
+                if(!modelId && !readyForInsert) {
+                  // If we still don't have a model...
                   debugger
                 }
-
-                // Split and loop words
-                let reduceFigureNameArr = figure.split(' ')
-                let i = 0;
-                let figWord = null
-                do {
-                  if (isNaN(reduceFigureNameArr[i])) {
-                    // Add checks for '+', 'Warriors', 'Riders'
-
-
-                    // Search the db for this value
-                    figWord = reduceFigureNameArr[i]
-                    modelId = await db.get(`SELECT * FROM Models WHERE name LIKE "%${figWord}%"`)
-
-                    // If rows = 1
-                    break;
-                  }
-                  i++;
-                } while (i < reduceFigureNameArr.length);
-
               }
-              else {
+
+              // This was the corresponding else to if model undefined. Now it's own thing.
+              if(readyForInsert) {
                 // insert into Issues(issueNumber, modelID, isSpecial)
                 const isSpecial = isNaN(issue['Issue Number']) ? 1 : 0 // If false, 1 (IS a special)
                 try {

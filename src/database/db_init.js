@@ -10,7 +10,7 @@ async function createTables(db) {
     );
 
     await db.run(
-        "CREATE TABLE Issues (id INTEGER PRIMARY KEY AUTOINCREMENT, issueNumber TEXT, modelId INTEGER, isSpecial BOOLEAN, FOREIGN KEY(modelId) REFERENCES Models(id))"
+        "CREATE TABLE Issues (id INTEGER PRIMARY KEY AUTOINCREMENT, issueNumber TEXT, modelId INTEGER, isSpecial BOOLEAN, hasInsert BOOLEAN, FOREIGN KEY(modelId) REFERENCES Models(id))"
     );
 
     await db.run(

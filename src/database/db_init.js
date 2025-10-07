@@ -1,9 +1,22 @@
+/**
+ * 
+ * @param {*} db 
+ * @returns 
+ * 
+ * This function creates the tables for the application. Models, Issues, Magazine Section, Articles and the log table.
+ * References to choices are irrelevant and there just for reference on how to use.
+ * 
+ * Exports:
+ * - createTables(db)
+ * - insertInitialData(db) - Irrelevant, choices related.
+ */
+
 async function createTables(db) {
     console.log('Creating tables...')
     // Database doesn't exist yet - init tables
-    await db.run(
-        "CREATE TABLE Choices (id INTEGER PRIMARY KEY AUTOINCREMENT, language TEXT, picks INTEGER)"
-    );
+    // await db.run(
+    //     "CREATE TABLE Choices (id INTEGER PRIMARY KEY AUTOINCREMENT, language TEXT, picks INTEGER)"
+    // );
 
     await db.run(
         "CREATE TABLE Models (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, modelCount INTEGER)"
@@ -30,14 +43,14 @@ async function createTables(db) {
     return;
 }
 
-async function insertInitialData(db) {
-    // Add default choices to table
-    await db.run(
-        "INSERT INTO Choices (language, picks) VALUES ('HTML', 0), ('JavaScript', 0), ('CSS', 0)"
-    );
-}
+// async function insertInitialData(db) {
+//     // Add default choices to table
+//     await db.run(
+//         "INSERT INTO Choices (language, picks) VALUES ('HTML', 0), ('JavaScript', 0), ('CSS', 0)"
+//     );
+// }
 
 module.exports = async function dbInit(db) {
     await createTables(db);
-    await insertInitialData(db);
+    //await insertInitialData(db);
 }

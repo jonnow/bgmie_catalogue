@@ -64,19 +64,21 @@ dbWrapper
               // Find by model name in SQL to get ID
               const figure = issue['Figure(s)']
               let readyForInsert = false
+              let cardInsert = false
 
+              // Start with a straight up match with the incoming
               let modelId = await db.get(`SELECT * FROM Models WHERE name == "${figure}"`)
-              if(modelId) {
+              if (modelId) {
                 readyForInsert = true;
               }
 
               if (!readyForInsert) {
                 // Couldn't find a model with this name, try to expand the search...
-                let cardInsert = false
+
 
                 // Do specific search if 'None' or 'Banner' or 'Warg' or 'Card' is included (is specific term).
-                if(figure.split('None').length > 1) {
-                  modelId = {id:null}
+                if (figure.split('None').length > 1) {
+                  modelId = { id: null }
                   // Check for a card:
                   if (figure.split('Card').length > 1) {
                     cardInsert = true
@@ -95,37 +97,56 @@ dbWrapper
                   cardInsert = true;
                   // This won't work with 8 Gonder and 4 Elves mixed sprue.
 
-                  
-
-                  if(!modelId) {
+                  if (!modelId) {
                     // Step 1: Try to split off card and search for the model including the number of figures:
                     const baseNameWithNumber = figure.split(' + Card')[0]
-                    modelId = await db.get(`SELECT * FROM Models WHERE name == "${baseNameWithNumber}"`)
 
+                    modelId = await db.get(`SELECT * FROM Models WHERE name == "${baseNameWithNumber}" COLLATE NOCASE`);
                     // If we still don't have a model ID...Try fuzzy search with out the preceeding number
                     // Check if needing to remove number...this was causing errors without a check
-                    if(!modelId) {
+                    if (!modelId) {
                       const baseNameWithoutNumber = baseNameWithNumber.match(/^(\d+)\s+(.+?)$/)
 
                       // Check if base name without number actually exists, otherwise skip
-                      if(baseNameWithoutNumber) {
+                      if (baseNameWithoutNumber) {
                         modelId = await db.get(`SELECT * FROM Models WHERE name LIKE "%${baseNameWithoutNumber[2]}%"`)
+                        readyForInsert = modelId ? true : false;
                       }
                     }
+                    else {
+                      readyForInsert = true;
+                    }
                   }
-
-                  if(!modelId) {
-                      const figureMatch = figure.match(/^(\d+)\s+(.+?)\s+\+\s+(.+)$/);
-                      try { 
+                  let figureMatch;
+                  if (!modelId) {
+                    figureMatch = figure.match(/^(\d+)\s+(.+?)\s+\+\s+(.+)$/);
+                    if (figureMatch) {
+                      try {
                         let numOfFigs = figureMatch[1]
                         let nameOfFigs = figureMatch[2]
-                        modelId = await db.get(`SELECT * FROM Models WHERE name == "${nameOfFigs}"`)
+                        modelId = await db.get(`SELECT * FROM Models WHERE name == "${nameOfFigs}" COLLATE NOCASE`)
+                        console.log(nameOfFigs)
+                        readyForInsert = modelId ? true : false;
                       } catch (error) {
-                        
                         // Need to check for other models here
                         debugger
                       }
                     }
+                    else {
+                      figureMatch = figure.split(' + Card Insert')
+                      if (figureMatch.length > 0) {
+                        try {
+
+                          let nameOfFigs = figureMatch[0]
+                          modelId = await db.get(`SELECT * FROM Models WHERE name == "${nameOfFigs}" COLLATE NOCASE`); // Collate nocase to match not case senstive
+                          console.log('Model ID in inner search: ', modelId);
+                          readyForInsert = modelId ? true : false;
+                        } catch (error) {
+                          debugger
+                        }
+                      }
+                    }
+                  }
 
                   /**
                    * Check to see if this string (that contains the word 'card', has a figure in the DB already):
@@ -137,14 +158,15 @@ dbWrapper
                    * (.+)      Matches one or more of any character until the end of the string and captures them in group 3 (everything after the '+').
                    * $         Matches the end of the string.
                    */
-                  
+
+
 
                   // Update the DB if a fig ID has been found
                   // Don't need to do the next part...
                 }
 
                 // Still don't have a model to search for:
-                if(!modelId && !readyForInsert) {
+                if (!modelId && !readyForInsert) {
                   // Split and loop words
                   let reduceFigureNameArr = figure.split(' ')
                   let i = 0;
@@ -152,33 +174,32 @@ dbWrapper
                   do {
                     if (isNaN(reduceFigureNameArr[i])) {
                       // Add checks for '+', 'Warriors', 'Riders'
-                      
-                      
+
                       // Search the db for this value
                       figWord = reduceFigureNameArr[i]
                       modelId = await db.get(`SELECT * FROM Models WHERE name LIKE "%${figWord}%"`)
-                      
+
                       // If rows = 1
                       break;
                     }
                     i++;
                   } while (i < reduceFigureNameArr.length);
+                  readyForInsert = modelId ? true : false;
                 }
 
-                if(!modelId && !readyForInsert) {
+                if (!modelId && !readyForInsert) {
                   // If we still don't have a model...
                   debugger
                 }
               }
 
               // This was the corresponding else to if model undefined. Now it's own thing.
-              if(readyForInsert) {
+              if (readyForInsert) {
                 // insert into Issues(issueNumber, modelID, isSpecial)
                 const isSpecial = isNaN(issue['Issue Number']) ? 1 : 0 // If false, 1 (IS a special)
                 try {
-                  // debugger
                   //issueNumber = isSpecial == 1 ? issue['IssueNumber'] : parseInt(issue['Issue Number']) // If it's a special enter as is, if normal parse int to number
-                  await db.run(`UPDATE Issues SET modelID = ${modelId.id}, isSpecial = ${isSpecial} WHERE issueNumber = "${issue['Issue Number']}"`)
+                  await db.run(`UPDATE Issues SET modelID = ${modelId.id}, isSpecial = ${isSpecial}, hasInsert = ${cardInsert} WHERE issueNumber = "${issue['Issue Number']}"`)
                 } catch (error) {
                   debugger
                 }

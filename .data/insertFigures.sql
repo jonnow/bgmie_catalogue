@@ -71,7 +71,7 @@ INSERT INTO models(name, modelCount) VALUES
 ('Witch king (Return of the King)', 1),
 ('Conversion kit', 1),
 ('Armoured Legolas (Return of the King)', 1),
-('Easterling captain', 1),
+('Easterling Captain', 1),
 ('Aragorn Elessar', 1),
 ('Radagast the Brown', 1),
 ('Tom Bombadil', 1),

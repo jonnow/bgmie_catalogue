@@ -30,27 +30,31 @@ fastify.get("/", async (request, reply) => {
   return reply.view("/src/pages/index.hbs");
 });
 
-fastify.post("/", async (request, reply) => {
-  let params = request.query.raw ? {} : { seo: seo };
-  console.log("params:", params);
-  params.results = true;
+/**
+ * This was related to the Choices DB. A demo table/db to get going.
+ * Keeping this snippet for reference in future.
+ */
+// fastify.post("/", async (request, reply) => {
+//   let params = request.query.raw ? {} : { seo: seo };
+//   console.log("params:", params);
+//   params.results = true;
 
-  let options;
+//   let options;
 
-  if (request.body.language) {
-    options = await db.processVote(request.body.language);
-    if (options) {
-      params.optionNames = options.map((choice) => choice.language);
-      params.optionCounts = options.map((choice) => choice.picks);
-    }
-  }
+//   if (request.body.language) {
+//     options = await db.processVote(request.body.language);
+//     if (options) {
+//       params.optionNames = options.map((choice) => choice.language);
+//       params.optionCounts = options.map((choice) => choice.picks);
+//     }
+//   }
 
-  params.error = options ? null : data.errorMessage;
+//   params.error = options ? null : data.errorMessage;
 
-  return request.query.raw
-    ? reply.send(params)
-    : reply.view("/src/pages/index.hbs", params);
-});
+//   return request.query.raw
+//     ? reply.send(params)
+//     : reply.view("/src/pages/index.hbs", params);
+// });
 
 fastify.post("/add-issue", async (request, reply) => {
   console.log("got to here");

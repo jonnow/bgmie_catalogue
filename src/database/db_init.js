@@ -32,7 +32,7 @@ async function createTables(db) {
 
 
     await db.run(
-        "CREATE TABLE Articles (id INTEGER PRIMARY KEY AUTOINCREMENT, article TEXT)"
+        "CREATE TABLE Articles (id INTEGER PRIMARY KEY AUTOINCREMENT, article TEXT, pages TEXT, sectionId INTEGER, FOREIGN KEY(sectionId) REFERENCES MagazineSection(id))"
     )
 
     // Log can start empty - we'll insert a new record whenever the user chooses a poll option

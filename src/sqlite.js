@@ -77,129 +77,10 @@ dbWrapper
         magazine.cardInsert = figureLookup.cardInsert;
         magazine.model = figureLookup.model;
         readyForInsert = figureLookup.readyForInsert;
-        // Moved to the above function
-        /*
-        // Start with a straight up name match with the incoming
-        magazine.model = await searchDBForModel(figure);
 
-        if (magazine.model) {
-          readyForInsert = true;
-        }
 
-        if (!readyForInsert) {
-          // Couldn't find a model with this name, try to expand the search...
-          // Do specific search if 'None' or 'Banner' or 'Warg' or 'Card' is included (is specific term).
-          if (figure.split('None').length > 1) {
-            // No need to set this as we construct as null
-            //modelId = { id: null }
-            // Check for a card:
-            if (figure.split('Card').length > 1) {
-              magazine.cardInsert = true
-            }
-            readyForInsert = true
-            // end this figure check.
-          }
-          // Each need checking separately as there could be a banner and an insert
-          if (figure.split('Warg').length > 1 && !readyForInsert) {
-            //debugger;
-          }
-          if (figure.split('Banner').length > 1 && !readyForInsert) {
-            //debugger;
-          }
-          if (figure.split('Card').length > 1 && !readyForInsert) {
-            magazine.cardInsert = true;
 
-            // This won't work with 8 Gonder and 4 Elves mixed sprue.
-            if (!magazine.model) {
-              // Step 1: Try to split off card and search for the model including the number of figures:
-              const baseNameWithNumber = figure.split(' + Card')[0]
 
-              debugger
-              magazine.model = await searchDBForModel(baseNameWithNumber)
-              //db.get(`SELECT * FROM Models WHERE name == "${baseNameWithNumber}" COLLATE NOCASE`);
-              //magazine.model = await db.get(`SELECT * FROM Models WHERE name == "${baseNameWithNumber}" COLLATE NOCASE`);
-              // If we still don't have a model ID...Try fuzzy search with out the preceeding number
-              // Check if needing to remove number...this was causing errors without a check
-              if (!magazine.model) {
-                const baseNameWithoutNumber = baseNameWithNumber.match(/^(\d+)\s+(.+?)$/)
-
-                // Check if base name without number actually exists, otherwise skip
-                if (baseNameWithoutNumber) {
-                  magazine.model = await searchDBForModel(baseNameWithoutNumber[2], condition.like)
-                  readyForInsert = magazine.model.id ? true : false;
-                }
-              }
-              else {
-                readyForInsert = true;
-                return
-              }
-            }
-            let figureMatch;
-            if (!magazine.model) {
-              figureMatch = figure.match(/^(\d+)\s+(.+?)\s+\+\s+(.+)$/);
-              if (figureMatch) {
-                try {
-                  let numOfFigs = figureMatch[1]
-                  let nameOfFigs = figureMatch[2]
-                  magazine.model = await searchDBForModel(nameOfFigs)
-                  console.log(nameOfFigs)
-                  readyForInsert = magazine.model ? true : false;
-                } catch (error) {
-                  // Need to check for other models here
-                  debugger
-                }
-              }
-              else {
-                figureMatch = figure.split(' + Card Insert')
-                if (figureMatch.length > 0) {
-                  try {
-
-                    let nameOfFigs = figureMatch[0]
-                    magazine.model = await searchDBForModel(nameOfFigs)
-                    //magazine.model = await db.get(`SELECT * FROM Models WHERE name == "${nameOfFigs}" COLLATE NOCASE`); // Collate nocase to match not case senstive
-                    console.log('Model ID in inner search: ', magazine.model);
-                    readyForInsert = magazine.model ? true : false;
-                  } catch (error) {
-                    debugger
-                  }
-                }
-              }
-            }
-
-            /**
-             * Check to see if this string (that contains the word 'card', has a figure in the DB already):
-             * ^         Matches the beginning of the string.
-             * (\d+)     Matches one or more digits and captures them in group 1 (the number).
-             * \s+       Matches one or more whitespace characters.
-             * (.+?)     Matches one or more of any character (non-greedy) and captures them in group 2 (the text between the number and the '+'). The ? makes it non-greedy, so it stops at the next part of the pattern.
-             * \s+\+\s+  Matches one or more whitespace characters, followed by a literal + sign (which needs to be escaped with a backslash), followed by one or more whitespace characters.
-             * (.+)      Matches one or more of any character until the end of the string and captures them in group 3 (everything after the '+').
-             * $         Matches the end of the string.
-             */
-
-        // Update the DB if a fig ID has been found
-        // Don't need to do the next part...
-
-        // Still don't have a model to search for:
-        if (!magazine.model && !readyForInsert) {
-          // Split and loop words
-          let reduceFigureNameArr = figure.split(' ')
-          let i = 0;
-          let figWord = null
-          do {
-            if (isNaN(reduceFigureNameArr[i])) {
-              // Add checks for '+', 'Warriors', 'Riders'
-
-              // Search the db for this value
-              figWord = reduceFigureNameArr[i]
-              magazine.model = await searchDBForModel(figWord, condition.like)
-              //magazine.model = await db.get(`SELECT * FROM Models WHERE name LIKE "%${figWord}%"`)
-              // If rows = 1
-            }
-            i++;
-          } while (i < reduceFigureNameArr.length);
-          readyForInsert = magazine.model ? true : false;
-        }
 
         if (!magazine.model && !readyForInsert) {
           // If we still don't have a model...
@@ -379,10 +260,7 @@ async function searchDBForModel(searchItem, searchType = condition.eq,) {
 }
 
 async function findModel(figure) {
-  // To do: 
-  // - Move the model matching to here
-  // - Update the return to return readyForInsert as True?
-  // - Make sure model Class is being updated in this function
+  // Create a base lookup object for a figure, this will allow things to be uploaded to DB even if we don't find anything
   let lookupObj = { 'model': null, 'cardInsert': null, 'readyForInsert': false }
 
   // Check for no model magazine
@@ -407,14 +285,12 @@ async function findModel(figure) {
     lookupObj.readyForInsert = true
     return lookupObj
   }
-
   // Otherwise we carry on...
 
-  // Former if wrapper:
+  /*
+  // This may be redundant. Leaving in but commenting out.
 
-  // Couldn't find a model with this name, try to expand the search...
-  // Do specific search if 'None' or 'Banner' or 'Warg' or 'Card' is included (is specific term).
-
+  // Do specific search if 'Banner' or 'Warg' or 'Card' is included (is specific term).
   // Each need checking separately as there could be a banner and an insert
   if (figure.split('Warg').length > 1) {
     //debugger;
@@ -422,31 +298,25 @@ async function findModel(figure) {
   if (figure.split('Banner').length > 1) {
     //debugger;
   }
+  */
 
-  // I think I can get rid of this if, keep what's inside though. We shouldn't need it because the return will have happened already if it matches
-  //if (figure.split('Card').length > 1) {
-  //magazine.cardInsert = true;
-
-  // This won't work with 8 Gonder and 4 Elves mixed sprue.
-  //if (!magazine.model) {
   // Step 1: Try to split off card and search for the model including the number of figures:
-  const baseNameWithNumber = figure.split(' + Card')[0]
+  const figureSplit = figure.split(' + Card')
+  const baseNameWithNumber = figureSplit[0]
+
+  // Check for card insert
+  if (figureSplit[1]) {
+    lookupObj.cardInsert = true
+  }
 
   lookupObj.model = await searchDBForModel(baseNameWithNumber)
 
   // If we find something, return it, otherwise carry on
-  if (dbFigure) {
+  if (lookupObj.model) {
+    lookupObj.readyForInsert = true
     return lookupObj
-    // or should this be:
-    // return readyForInsert = true?
   }
 
-
-  //db.get(`SELECT * FROM Models WHERE name == "${baseNameWithNumber}" COLLATE NOCASE`);
-  //magazine.model = await db.get(`SELECT * FROM Models WHERE name == "${baseNameWithNumber}" COLLATE NOCASE`);
-  // If we still don't have a model ID...Try fuzzy search with out the preceeding number
-  // Check if needing to remove number...this was causing errors without a check
-  //if (!magazine.model) {
   const baseNameWithoutNumber = baseNameWithNumber.match(/^(\d+)\s+(.+?)$/)
 
   // Check if base name without number actually exists, otherwise skip
@@ -455,8 +325,6 @@ async function findModel(figure) {
     lookupObj.readyForInsert = lookupObj.model?.id ? true : false;
     return lookupObj
   }
-  //}
-  //}
   let figureMatch;
   //if (!magazine.model) {
   figureMatch = figure.match(/^(\d+)\s+(.+?)\s+\+\s+(.+)$/);
@@ -493,7 +361,6 @@ async function findModel(figure) {
       }
     }
   }
-  //}
 
   /**
    * Check to see if this string (that contains the word 'card', has a figure in the DB already):
@@ -506,13 +373,6 @@ async function findModel(figure) {
    * $         Matches the end of the string.
    */
 
-  // Update the DB if a fig ID has been found
-  // Don't need to do the next part...
-
-  // former end of if
-
-  // Still don't have a model to search for:
-  //if (!magazine.model && !readyForInsert) {
   // Split and loop words
   let reduceFigureNameArr = figure.split(' ')
   let i = 0;
@@ -534,7 +394,6 @@ async function findModel(figure) {
   } while (i < reduceFigureNameArr.length);
 
   lookupObj.readyForInsert = lookupObj.model ? true : false;
-  //}
 
   if (!lookupObj.model && !lookupObj.readyForInsert) {
     // If we still don't have a model...
@@ -542,7 +401,7 @@ async function findModel(figure) {
   }
   //}
 
-  return lookupObj
+  return lookupObj; // Return whatever we have left
 }
 
 

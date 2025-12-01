@@ -414,12 +414,14 @@ function insertArticles(issueData) {
     const article = issueData['Article Title']
     const pages = issueData["Page No's"]
     const sectionId = sections[issueData['Magazine Section']]
+    const issueId = issueData['Issue Number']
 
     // Insert into the Articles table
-    db.run("INSERT INTO Articles (article, pages, sectionId) VALUES (?, ?, ?)", [
+    db.run("INSERT INTO Articles (article, pages, sectionId, issueId) VALUES (?, ?, ?, ?)", [
       article,
       pages,
-      sectionId
+      sectionId,
+      issueId
     ]);
   }
 

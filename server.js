@@ -59,15 +59,45 @@ fastify.get("/", async (request, reply) => {
 fastify.post("/add-issue", async (request, reply) => {
   console.log("got to here");
   const form = request.body,
-        issueNumber = form.issueNumber,
-        modelName = form.modelName,
-        modelCount = form.modelCount;
+    issueNumber = form.issueNumber,
+    modelName = form.modelName,
+    modelCount = form.modelCount;
 
   const x = await db.upsertIssue(issueNumber, modelName, modelCount);
 
   console.log('server.js x: ', x);
   debugger;
 });
+
+// Get all issues
+fastify.get('/issues', async (request, reply) => {
+  try {
+    console.log('Getting all issues')
+    const issues = await db.getIssues();
+
+    // Decide whether to return empty results
+
+    return issues;
+  } catch (err) {
+    request.log.error(err); // Use Fastify's built-in logger
+    reply.status(500).send({ error: 'Failed to fetch magazine issues' });
+  }
+})
+
+// Get single issue
+fastify.get('/issues/:id', async (request, reply) => {
+  try {
+    const id = request.params.id
+    console.log(`Getting single issue with ID ${id}`);
+
+    const issue = await db.getIssue(id)
+    return issue
+  } catch (err) {
+    request.log.error(err);
+    console.error(err)
+    reply.status(500).send({ error: 'Error find this magazine' })
+  }
+})
 
 fastify.listen(
   { port: process.env.PORT, host: "0.0.0.0" },

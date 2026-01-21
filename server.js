@@ -99,6 +99,44 @@ fastify.get('/issues/:id', async (request, reply) => {
   }
 })
 
+fastify.get('/issues/specials', async (request, reply) => {
+  try {
+    return await db.getSpecials();
+  } catch (err) {
+    console.error(`Error fetching specials: ${error}`)
+  }
+})
+
+fastify.get('/models', async (request, reply) => {
+  try {
+    return await db.getModels();
+  } catch (err) {
+    console.error(`Error fetching all models: ${err}`)
+  }
+})
+
+fastify.get('/factions', async (request, reply) => {
+  try {
+    return await db.getFactions();
+  } catch (err) {
+    console.error(`Error fetching all factions: ${err}`)
+  }
+})
+
+fastify.get('/factions/:id', async (request, reply) => {
+  try {
+    const id = request.params.id
+    console.info(`Getting factions with ID: ${id}`)
+    const faction = await db.getFaction(id);
+    const factionModels = await db.getFactionModels(id);
+    return { faction, factionModels }
+  } catch (err) {
+    console.error(`Error fetching single faction: ${err}`)
+    request.log.error(err);
+    reply.status(500).send({ error: 'Error finding this faction' })
+  }
+})
+
 fastify.listen(
   { port: process.env.PORT, host: "0.0.0.0" },
   function (err, address) {

@@ -17,9 +17,24 @@ async function createTables(db) {
     // await db.run(
     //     "CREATE TABLE Choices (id INTEGER PRIMARY KEY AUTOINCREMENT, language TEXT, picks INTEGER)"
     // );
+    await db.run(
+        "CREATE TABLE Team(id INTEGER PRIMARY KEY, team TEXT)"
+    )
 
     await db.run(
-        "CREATE TABLE Models (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, modelCount INTEGER)"
+        "CREATE TABLE FilmSeries(id INTEGER PRIMARY KEY, series TEXT)"
+    )
+
+    await db.run(
+        "CREATE TABLE Film(id INTEGER PRIMARY KEY, film TEXT, seriesId, FOREIGN KEY(seriesId) REFERENCES FilmSeries(id))"
+    )
+
+    await db.run(
+        "CREATE TABLE Faction(id INTEGER PRIMARY KEY AUTOINCREMENT, faction TEXT, teamId INTEGER, filmId INTEGER, FOREIGN KEY(teamId) REFERENCES Team(id), FOREIGN KEY(filmId) REFERENCES   Film(id))"
+    )
+
+    await db.run(
+        "CREATE TABLE Models (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, modelCount INTEGER, factionId INTEGER, FOREIGN KEY (factionId) REFERENCES Faction(id))"
     );
 
     await db.run(
@@ -29,7 +44,6 @@ async function createTables(db) {
     await db.run(
         "CREATE TABLE MagazineSection (id INTEGER PRIMARY KEY AUTOINCREMENT, section TEXT)"
     )
-
 
     await db.run(
         "CREATE TABLE Articles (id INTEGER PRIMARY KEY AUTOINCREMENT, article TEXT, pages TEXT, sectionId INTEGER, issueId INTEGER, FOREIGN KEY(sectionId) REFERENCES MagazineSection(id), FOREIGN KEY(issueId) REFERENCES Issue(id))"

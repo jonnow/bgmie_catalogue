@@ -28,22 +28,26 @@ I then refactored this code to make it easier to follow and reusable. I introduc
 
 ## Next steps
 ### Update January 2026
+#### Done - Clean up SQL initial build
+The init for the SQL is running every time, and so I'm ending up with thousands upon thousands of entries for arhis needs cleaning up so it doesn't run if the database and tables already exist!
+
 #### API endpoints
 Now that the database is built and ready to go I can move my attention to the API endpoints. I want endpoints for:
-- List all magazines
-- Show a single magazine with all content and figures
-- List models
-- Show where a model appears in a magazine.
+- Done - List all magazines
+- Done - Show a single magazine with all content and figures
+- Done - List models
+- Done - Show where a model appears in a magazine.
+- Done - Show special issues
 
 #### Factions
 As I'm writing this, I think it would be useful to include the faction that each model applies to. I'll need to:
-- Create a Factions table.
-- Update the Figures table with a Faction Foreign Key.
+- Done - Create a Factions table.
+- Done - Update the Figures table with a Faction Foreign Key.
 - Update the figure insert with to include the faction.
 
 Once this is complete, I'll create endpoints for:
-- Listing all factions - Rohan, Gondor, Isengard etc.
-- Listing the models for a faction and which magazine they appear in - Isengard: Uruk-hai, Saruman, and so forth.
+- Done - Listing all factions - Rohan, Gondor, Isengard etc.
+- Done - Listing the models for a faction and which magazine they appear in - Isengard: Uruk-hai, Saruman, and so forth.
 - Possibly further along, listing magazines against the faction.
 
 #### Design

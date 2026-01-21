@@ -6,6 +6,7 @@ const fs = require("fs");
 const dbFigures = './.data/insertFigures.sql';
 const dbIssues = './.data/insertIssues.sql';
 const dbSections = './.data/insertMagazineSections.sql';
+const dbFactions = './.data/insertFactions.sql';
 
 
 module.exports = async function insertData(db) {
@@ -14,19 +15,25 @@ module.exports = async function insertData(db) {
         await db.exec(
             insertFiguresScript
         );
-        console.log('Figure data loaded.')
+        console.info('Figure data loaded.');
 
         const insertIssuesScript = fs.readFileSync(dbIssues).toString();
         await db.exec(
             insertIssuesScript
         );
-        console.log('Issues data loaded.')
+        console.info('Issues data loaded.');
 
         const insertSections = fs.readFileSync(dbSections).toString();
         await db.exec(
             insertSections
         );
-        console.log('Magazine sections data loaded')
+        console.info('Magazine sections data loaded');
+
+        const insertFactions = fs.readFileSync(dbFactions).toString();
+        await db.exec(
+            insertFactions
+        );
+        console.info('Factions data loaded');
     } catch (error) {
         console.error(`Error loading initial data: ${error}`)
         debugger;

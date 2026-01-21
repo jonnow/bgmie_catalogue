@@ -23,6 +23,7 @@ const { ReadyForInsert } = require("./database/db_insert.js");
 const dbInsert = require('./database/db_insert.js').ReadyForInsert;
 const Magazine = require('./models/magazine.js');
 const { notEqual } = require("node:assert");
+const queries = require('./helpers/queries.js');
 let db;
 
 
@@ -279,59 +280,41 @@ module.exports = {
     try {
       // The following SQLite query had been optimised to return the smallest possible amount of data, aliasing the table names with letters. For readibility I've reverted them back. The amount of data is 1kb. This could potentially be overcome by GZipping the returned payload instead.
       // I discovered NULL is more expensive than sending 0 back. This is because it's sending 4 letters back, not a value of nothing.
-      return await db.all(`
-        SELECT    i.id
-                , m.name
-                , m.modelCount
-                , CASE i.isSpecial 
-                    WHEN 1 THEN 1
-                    ELSE 0
-                  END special
-                , CASE i.hasInsert 
-                    WHEN 1 THEN 1
-                    ELSE 0
-                  END hasCard
-        FROM Issues i 
-        JOIN Models m 
-          ON i.modelId = m.id
-      `);
+      return await db.all(queries.selectAllIssues);
     } catch (dbError) {
       // Database connection error
       console.error(dbError);
     }
   },
   getIssue: async (issueNumber) => {
-    const issue = await db.get(`
-        SELECT    i.id
-                , m.name
-                , m.modelCount
-                , CASE i.isSpecial 
-                    WHEN 1 THEN 1
-                    ELSE 0
-                  END special
-                , CASE i.hasInsert 
-                    WHEN 1 THEN 1
-                    ELSE 0
-                  END hasCard
-        FROM Issues i 
-        JOIN Models m 
-          ON i.modelId = m.id
-        WHERE i.id = ?`, [issueNumber])
+    const issue = await db.get(queries.selectSingleIssue, [issueNumber])
 
-    const articles = await db.all(`
-      SELECT  a.article
-            , a.pages
-            , a.sectionId
-            
-            , a.issueId
-      FROM Articles a
-      WHERE a.issueId = ?
-    `, [issueNumber])
+    const articles = await db.all(queries.selectSingleIssueArticles, [issueNumber])
 
     return {
       issue: issue,
       articles: articles,
     };
+  },
+  getSpecials: async () => {
+    console.log('Getting all Special issues');
+    return await db.all(queries.selectAllIssues + ' where i.isSpecial = 1')
+  },
+  getModels: async () => {
+    console.info('Getting all models');
+    return await db.all(queries.selectAllModels);
+  },
+  getFactions: async () => {
+    console.info('Getting all factions');
+    return await db.all(queries.selectAllFactions);
+  },
+  getFaction: async (id) => {
+    console.info('Getting faction with ID: ', id);
+    return await db.all(queries.selectSingleFaction + ` WHERE fa.id = ${id}`);
+  },
+  getFactionModels: async (factionId) => {
+    console.info('Getting all models for faction: ', factionId);
+    return await db.all(queries.selectAllModels + ` WHERE m.factionId = ${factionId}`)
   }
 };
 

@@ -46,78 +46,99 @@ dbWrapper
 
         // call DB init here
         await dbInit(db); // Create tables
-        await dbLoader(db); // Populate tables
-
+        await dbLoader(db); // Populate tables from SQL scripts
+        await populateTables(); // Populate tables with non-script data
       } else {
 
         // We have a database already - write Choices records to log for info
         console.log('Database exists!');
         console.log(await db.all("SELECT i.issueNumber, m.name AS 'Model name', m.modelCount from Issues i JOIN Models m ON i.modelId = m.id"));
-      }
 
-      /**
-       * Loop the issues and insert programmatically
-      */
-      // Read clean CSV and convert to JSON
-      const issuesObj = await csvToJson().fromFile(issueListCSV);
+        try {
 
-      // Filter down to just figures and insert these
-      const issuesFiltered = issuesObj
-        .filter(issue => issue['Figure(s)'] !== '' && issue['Figure(s)'] !== 'Figure(s)')
-
-      for (const issue of issuesFiltered) {
-        const magazine = new Magazine();
-        // Find by model name in SQL to get ID
-        const figure = issue['Figure(s)']
-        let readyForInsert = false, figureLookup = {}
-
-        magazine.issueNumber = issue['Issue Number']
-
-        figureLookup = await findModel(figure);
-        magazine.cardInsert = figureLookup.cardInsert;
-        magazine.model = figureLookup.model;
-        readyForInsert = figureLookup.readyForInsert;
-
-
-
-
-
-        if (!magazine.model && !readyForInsert) {
-          // If we still don't have a model...
-          debugger
-        }
-
-
-        // Check for card insert, moved from above
-        // if (figure.split('Card').length > 1) {
-        //   magazine.cardInsert = true
-        // }
-
-
-        // This was the corresponding else to if model undefined. Now it's own thing.
-        if (readyForInsert) {
-
-          // insert into Issues(issueNumber, modelID, isSpecial)
-          magazine.isSpecial = isNaN(magazine.issueNumber) ? 1 : 0 // If false, 1 (IS a special)
-          try {
-            //issueNumber = isSpecial == 1 ? issue['IssueNumber'] : parseInt(issue['Issue Number']) // If it's a special enter as is, if normal parse int to number
-            await db.run(`UPDATE Issues SET modelID = ${magazine.model?.id == undefined ? null : magazine.model.id}, isSpecial = ${magazine.isSpecial}, hasInsert = ${magazine.cardInsert} WHERE issueNumber = "${magazine.issueNumber}"`)
-          } catch (error) {
-            debugger
+          const tableTest = await db.all("SELECT i.issueNumber, m.name AS 'Model name', m.modelCount from Issues i JOIN Models m ON i.modelId = m.id")
+          if (tableTest.length > 0) {
+            // We have items in the table, don't proceed to seed tables.
+            return
           }
-        }
-      }
 
-      // Loop everything in the issuesObj and insert the articles
-      for (const issue of issuesObj) {
-        // Insert magazine sections
-        insertArticles(issue);
+        } catch (error) {
+          console.error(`Error during table test: ${error}`)
+        }
+
+        populateTables();
       }
     } catch (ex) {
-      console.log(ex)
+      console.error(ex)
       debugger
     }
   });
+
+async function populateTables() {
+  try {
+    /**
+     * Loop the issues and insert programmatically
+    */
+    // Read clean CSV and convert to JSON
+    const issuesObj = await csvToJson().fromFile(issueListCSV);
+
+    // Filter down to just figures and insert these
+    const issuesFiltered = issuesObj
+      .filter(issue => issue['Figure(s)'] !== '' && issue['Figure(s)'] !== 'Figure(s)')
+
+    for (const issue of issuesFiltered) {
+      const magazine = new Magazine();
+      // Find by model name in SQL to get ID
+      const figure = issue['Figure(s)']
+      let readyForInsert = false, figureLookup = {}
+
+      magazine.issueNumber = issue['Issue Number']
+
+      figureLookup = await findModel(figure);
+      magazine.cardInsert = figureLookup.cardInsert;
+      magazine.model = figureLookup.model;
+      readyForInsert = figureLookup.readyForInsert;
+
+
+
+
+
+      if (!magazine.model && !readyForInsert) {
+        // If we still don't have a model...
+        debugger
+      }
+
+
+      // Check for card insert, moved from above
+      // if (figure.split('Card').length > 1) {
+      //   magazine.cardInsert = true
+      // }
+
+
+      // This was the corresponding else to if model undefined. Now it's own thing.
+      if (readyForInsert) {
+
+        // insert into Issues(issueNumber, modelID, isSpecial)
+        magazine.isSpecial = isNaN(magazine.issueNumber) ? 1 : 0 // If false, 1 (IS a special)
+        try {
+          //issueNumber = isSpecial == 1 ? issue['IssueNumber'] : parseInt(issue['Issue Number']) // If it's a special enter as is, if normal parse int to number
+          await db.run(`UPDATE Issues SET modelID = ${magazine.model?.id == undefined ? null : magazine.model.id}, isSpecial = ${magazine.isSpecial}, hasInsert = ${magazine.cardInsert} WHERE issueNumber = "${magazine.issueNumber}"`)
+        } catch (error) {
+          debugger
+        }
+      }
+    }
+
+    // Loop everything in the issuesObj and insert the articles
+    for (const issue of issuesObj) {
+      // Insert magazine sections
+      insertArticles(issue);
+    }
+  }
+  catch (err) {
+    console.error(`Error during seeding of tables: ${err}`)
+  }
+}
 
 // Our server script will call these methods to connect to the db
 module.exports = {
@@ -349,7 +370,7 @@ async function findModel(figure) {
 
   /*
   // This may be redundant. Leaving in but commenting out.
-
+ 
   // Do specific search if 'Banner' or 'Warg' or 'Card' is included (is specific term).
   // Each need checking separately as there could be a banner and an insert
   if (figure.split('Warg').length > 1) {

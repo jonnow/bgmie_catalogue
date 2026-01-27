@@ -1,0 +1,29 @@
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Issue list - Battle Games in Middle Earth Issue Encyclopaedia</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+
+<body>
+  <h1>Issues</h1>
+  <a href="/">Home</a>
+  <form method="GET" action="/issue/search">
+    <input type="text" name="search" placeholder="Search issues..." value="" />
+    <button type="submit">Search</button>
+  </form>
+  <ol>
+    {{#each issues}}
+    <li>
+      <a href="/issues/{{this.id}}">Issue {{this.issueNumber}}</a>
+      {{!-- Model is this.name --}}
+      {{#if this.name}}{{this.name}}{{else}}None{{/if}}
+    </li>
+    {{/each}}
+  </ol>
+</body>
+
+</html>

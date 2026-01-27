@@ -100,21 +100,15 @@ async function populateTables() {
       magazine.model = figureLookup.model;
       readyForInsert = figureLookup.readyForInsert;
 
-
-
-
-
       if (!magazine.model && !readyForInsert) {
         // If we still don't have a model...
         debugger
       }
 
-
       // Check for card insert, moved from above
       // if (figure.split('Card').length > 1) {
       //   magazine.cardInsert = true
       // }
-
 
       // This was the corresponding else to if model undefined. Now it's own thing.
       if (readyForInsert) {

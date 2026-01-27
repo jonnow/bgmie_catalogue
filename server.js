@@ -30,6 +30,20 @@ fastify.get("/", async (request, reply) => {
   return reply.view("/src/pages/index.hbs");
 });
 
+// Test the authentication
+fastify.get('/test', { preHandler: auth }, (request, reply) => {
+  return { 'protected': 'secret message' }
+});
+
+async function auth(request, reply) {
+  const apiKey = request.headers['x-api-key'];
+  const knownKey = 'known-api-key'; // Typically, this would be stored securely
+
+  if (apiKey !== knownKey) {
+    return reply.code(401).send({ error: 'Unauthorized' });
+  }
+}
+
 /**
  * This was related to the Choices DB. A demo table/db to get going.
  * Keeping this snippet for reference in future.
@@ -76,8 +90,7 @@ fastify.get('/issues', async (request, reply) => {
     const issues = await db.getIssues();
 
     // Decide whether to return empty results
-
-    return issues;
+    return reply.view('/src/pages/issues.hbs', { issues: issues });
   } catch (err) {
     request.log.error(err); // Use Fastify's built-in logger
     reply.status(500).send({ error: 'Failed to fetch magazine issues' });

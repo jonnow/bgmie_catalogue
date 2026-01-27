@@ -14,7 +14,7 @@ module.exports = {
                 ELSE 0
               END hasCard
     FROM Issues i 
-    JOIN Models m 
+    LEFT JOIN Models m 
       ON i.modelId = m.id`,
   selectSingleIssue: `
         SELECT    i.id
@@ -30,7 +30,7 @@ module.exports = {
                     ELSE 0
                   END hasCard
         FROM Issues i 
-        JOIN Models m 
+        LEFT JOIN Models m 
           ON i.modelId = m.id
         WHERE i.id = ?`,
   selectSingleIssueArticles: `
@@ -39,7 +39,7 @@ module.exports = {
                   , ms.section
                   , a.sectionId
             FROM Articles a
-            JOIN  MagazineSection ms
+            JOIN MagazineSection ms
               ON a.sectionId = ms.id
             JOIN Issues i
               ON a.issueId = i.id

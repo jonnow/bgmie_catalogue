@@ -28,27 +28,28 @@ I then refactored this code to make it easier to follow and reusable. I introduc
 
 ## Next steps
 ### Update January 2026
+- [ ] Gather outstanding issue data - Issues 80 - 91 are currently missing. I need to go through the contents page of each and add these to the initial SQL script.
 #### Done - Clean up SQL initial build
 The init for the SQL is running every time, and so I'm ending up with thousands upon thousands of entries for arhis needs cleaning up so it doesn't run if the database and tables already exist!
 
 #### API endpoints
 Now that the database is built and ready to go I can move my attention to the API endpoints. I want endpoints for:
-- Done - List all magazines
-- Done - Show a single magazine with all content and figures
-- Done - List models
-- Done - Show where a model appears in a magazine.
-- Done - Show special issues
+- [x] List all magazines
+- [x] Show a single magazine with all content and figures
+- [x] List models
+- [x] Show where a model appears in a magazine.
+- [x] Show special issues
 
 #### Factions
 As I'm writing this, I think it would be useful to include the faction that each model applies to. I'll need to:
-- Done - Create a Factions table.
-- Done - Update the Figures table with a Faction Foreign Key.
-- Update the figure insert with to include the faction.
+- [x] Create a Factions table.
+- [x] Update the Figures table with a Faction Foreign Key.
+- [ ] Update the figure insert with to include the faction.
 
 Once this is complete, I'll create endpoints for:
-- Done - Listing all factions - Rohan, Gondor, Isengard etc.
-- Done - Listing the models for a faction and which magazine they appear in - Isengard: Uruk-hai, Saruman, and so forth.
-- Possibly further along, listing magazines against the faction.
+- [x] Listing all factions - Rohan, Gondor, Isengard etc.
+- [x] Listing the models for a faction and which magazine they appear in - Isengard: Uruk-hai, Saruman, and so forth.
+- [ ] Possibly further along, listing magazines against the faction.
 
 #### Design
 The design is something I've been putting off. I want it to feel on theme, so checking out the various Tolkien books on my bookshelf, the Warhammer website, and tabletop apps for fantasy games would be a fair place to start for inspiration.

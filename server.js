@@ -11,6 +11,10 @@ fastify.register(require('@punkish/fastify-better-sqlite3'), {
   betterSqlite3options: { verbose: console.log }
 });
 
+fastify.register(require('@fastify/jwt'), {
+  secret: process.env.JWT_SIGNING_SECRET
+})
+
 fastify.register(require("@fastify/static"), {
   root: path.join(__dirname, "public"),
   prefix: "/",

@@ -11,55 +11,39 @@
  * - insertInitialData(db) - Irrelevant, choices related.
  */
 
-async function createTables(db) {
+function createTables(db) {
     console.log('Creating tables...')
     // Database doesn't exist yet - init tables
-    // await db.run(
-    //     "CREATE TABLE Choices (id INTEGER PRIMARY KEY AUTOINCREMENT, language TEXT, picks INTEGER)"
-    // );
-    await db.run(
-        "CREATE TABLE Team(id INTEGER PRIMARY KEY, team TEXT)"
-    )
+    db.exec(
+        //     "CREATE TABLE Choices (id INTEGER PRIMARY KEY AUTOINCREMENT, language TEXT, picks INTEGER)"
+        // );
+        `CREATE TABLE Team(id INTEGER PRIMARY KEY, team TEXT);
+        
+        CREATE TABLE FilmSeries(id INTEGER PRIMARY KEY, series TEXT);
+        
+        CREATE TABLE Film(id INTEGER PRIMARY KEY, film TEXT, seriesId, FOREIGN KEY(seriesId) REFERENCES FilmSeries(id));
+        
+        CREATE TABLE Faction(id INTEGER PRIMARY KEY AUTOINCREMENT, faction TEXT, teamId INTEGER, filmId INTEGER, FOREIGN KEY(teamId) REFERENCES Team(id), FOREIGN KEY(filmId) REFERENCES   Film(id));
+        
+        CREATE TABLE Models (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, modelCount INTEGER, factionId INTEGER, FOREIGN KEY (factionId) REFERENCES Faction(id));
+        
+        CREATE TABLE Issues (id INTEGER PRIMARY KEY AUTOINCREMENT, issueNumber TEXT, modelId INTEGER, isSpecial BOOLEAN, hasInsert BOOLEAN, FOREIGN KEY(modelId) REFERENCES Models(id));
+        
+        CREATE TABLE MagazineSection (id INTEGER PRIMARY KEY AUTOINCREMENT, section TEXT);
+        
+        CREATE TABLE Articles (id INTEGER PRIMARY KEY AUTOINCREMENT, article TEXT, pages TEXT, sectionId INTEGER, issueId INTEGER, FOREIGN KEY(sectionId) REFERENCES MagazineSection(id), FOREIGN KEY(issueId) REFERENCES Issue(id));
 
-    await db.run(
-        "CREATE TABLE FilmSeries(id INTEGER PRIMARY KEY, series TEXT)"
-    )
-
-    await db.run(
-        "CREATE TABLE Film(id INTEGER PRIMARY KEY, film TEXT, seriesId, FOREIGN KEY(seriesId) REFERENCES FilmSeries(id))"
-    )
-
-    await db.run(
-        "CREATE TABLE Faction(id INTEGER PRIMARY KEY AUTOINCREMENT, faction TEXT, teamId INTEGER, filmId INTEGER, FOREIGN KEY(teamId) REFERENCES Team(id), FOREIGN KEY(filmId) REFERENCES   Film(id))"
-    )
-
-    await db.run(
-        "CREATE TABLE Models (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT, modelCount INTEGER, factionId INTEGER, FOREIGN KEY (factionId) REFERENCES Faction(id))"
+        CREATE TABLE Log (id INTEGER PRIMARY KEY AUTOINCREMENT, choice TEXT, time STRING);`
     );
 
-    await db.run(
-        "CREATE TABLE Issues (id INTEGER PRIMARY KEY AUTOINCREMENT, issueNumber TEXT, modelId INTEGER, isSpecial BOOLEAN, hasInsert BOOLEAN, FOREIGN KEY(modelId) REFERENCES Models(id))"
-    );
-
-    await db.run(
-        "CREATE TABLE MagazineSection (id INTEGER PRIMARY KEY AUTOINCREMENT, section TEXT)"
-    )
-
-    await db.run(
-        "CREATE TABLE Articles (id INTEGER PRIMARY KEY AUTOINCREMENT, article TEXT, pages TEXT, sectionId INTEGER, issueId INTEGER, FOREIGN KEY(sectionId) REFERENCES MagazineSection(id), FOREIGN KEY(issueId) REFERENCES Issue(id))"
-    )
-
-    // Log can start empty - we'll insert a new record whenever the user chooses a poll option
-    await db.run(
-        "CREATE TABLE Log (id INTEGER PRIMARY KEY AUTOINCREMENT, choice TEXT, time STRING)"
-    );
+    console.log('Database tables created successfully');
 
     return;
 }
 
 // async function insertInitialData(db) {
 //     // Add default choices to table
-//     await db.run(
+//     db.exec(
 //         "INSERT INTO Choices (language, picks) VALUES ('HTML', 0), ('JavaScript', 0), ('CSS', 0)"
 //     );
 // }

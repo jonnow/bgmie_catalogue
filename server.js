@@ -5,6 +5,12 @@ const fastify = require("fastify")({
   logger: false,
 });
 
+fastify.register(require('@punkish/fastify-better-sqlite3'), {
+  pathToDb: './.data/choices.db',
+  // better-sqlite3 specific options
+  betterSqlite3options: { verbose: console.log }
+});
+
 fastify.register(require("@fastify/static"), {
   root: path.join(__dirname, "public"),
   prefix: "/",
@@ -26,6 +32,10 @@ if (seo.url === "glitch-default") {
 
 const db = require("./src/" + data.database);
 
+// Clean routes
+fastify.register(require('./routes/user'));
+
+// Messy routing
 fastify.get("/", async (request, reply) => {
   return reply.view("/src/pages/index.hbs");
 });

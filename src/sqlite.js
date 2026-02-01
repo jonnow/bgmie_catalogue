@@ -8,72 +8,69 @@
 const { condition, sections } = require('./helpers/enums.js');
 
 const fs = require("fs");
-const fsPromises = require('node:fs/promises');
 const csvToJson = require("csvtojson");
 
 // Initialize the database
-const dbFile = "./.data/choices.db";
+
 const dbInit = require('./database/db_init.js');
 const dbLoader = require('./database/db_loader.js');
-const issueListCSV = './.data/BGiME_issue_list.csv';
-const exists = fs.existsSync(dbFile);
-const sqlite3 = require("sqlite3").verbose();
-const dbWrapper = require("sqlite");
 const { ReadyForInsert } = require("./database/db_insert.js");
 const dbInsert = require('./database/db_insert.js').ReadyForInsert;
 const Magazine = require('./models/magazine.js');
 const { notEqual } = require("node:assert");
 const queries = require('./helpers/queries.js');
-let db;
 
 
-/* 
-We're using the sqlite wrapper so that we can make async / await connections
-- https://www.npmjs.com/package/sqlite
-*/
-dbWrapper
-  .open({
-    filename: dbFile,
-    driver: sqlite3.Database
-  })
-  .then(async dBase => {
-    db = dBase;
+const Database = require("better-sqlite3");
 
-    // We use try and catch blocks throughout to handle any database errors
+const dbFile = "./.data/choices.db";
+const issueListCSV = './.data/BGiME_issue_list.csv';
+const exists = fs.existsSync(dbFile);
+
+// 1. Initialize Connection Immediately
+const db = new Database(dbFile);
+db.pragma('journal_mode = WAL'); // Best practice for concurrency
+
+// We use try and catch blocks throughout to handle any database errors
+try {
+  // The async / await syntax lets us write the db operations in a way that won't block the app
+  if (!exists) {
+
+
+    // call DB init here
+    dbInit(db); // Create tables
+    dbLoader(db); // Populate tables from SQL scripts
+    populateTables(); // Populate tables with non-script data
+  } else {
+
+    // We have a database already - write Choices records to log for info
+    console.log('Database exists!');
+    // Simple synchronous query
+    const existingData = db.prepare(`
+      SELECT i.issueNumber, m.name AS 'Model name', m.modelCount 
+      FROM Issues i 
+      JOIN Models m ON i.modelId = m.id
+    `).all();
+
+    console.log(existingData);
     try {
-      // The async / await syntax lets us write the db operations in a way that won't block the app
-      if (!exists) {
 
-
-        // call DB init here
-        await dbInit(db); // Create tables
-        await dbLoader(db); // Populate tables from SQL scripts
-        await populateTables(); // Populate tables with non-script data
-      } else {
-
-        // We have a database already - write Choices records to log for info
-        console.log('Database exists!');
-        console.log(await db.all("SELECT i.issueNumber, m.name AS 'Model name', m.modelCount from Issues i JOIN Models m ON i.modelId = m.id"));
-
-        try {
-
-          const tableTest = await db.all("SELECT i.issueNumber, m.name AS 'Model name', m.modelCount from Issues i JOIN Models m ON i.modelId = m.id")
-          if (tableTest.length > 0) {
-            // We have items in the table, don't proceed to seed tables.
-            return
-          }
-
-        } catch (error) {
-          console.error(`Error during table test: ${error}`)
-        }
-
-        populateTables();
+      const tableTest = db.prepare("SELECT i.issueNumber, m.name AS 'Model name', m.modelCount from Issues i JOIN Models m ON i.modelId = m.id").all();
+      if (tableTest.length > 0) {
+        // We have items in the table, don't proceed to seed tables.
+        return
       }
-    } catch (ex) {
-      console.error(ex)
-      debugger
+
+    } catch (error) {
+      console.error(`Error during table test: ${error}`)
     }
-  });
+
+    populateTables();
+  }
+} catch (ex) {
+  console.error(ex)
+  debugger
+}
 
 async function populateTables() {
   try {
@@ -116,8 +113,25 @@ async function populateTables() {
         // insert into Issues(issueNumber, modelID, isSpecial)
         magazine.isSpecial = isNaN(magazine.issueNumber) ? 1 : 0 // If false, 1 (IS a special)
         try {
-          //issueNumber = isSpecial == 1 ? issue['IssueNumber'] : parseInt(issue['Issue Number']) // If it's a special enter as is, if normal parse int to number
-          await db.run(`UPDATE Issues SET modelID = ${magazine.model?.id == undefined ? null : magazine.model.id}, isSpecial = ${magazine.isSpecial}, hasInsert = ${magazine.cardInsert} WHERE issueNumber = "${magazine.issueNumber}"`)
+          // //issueNumber = isSpecial == 1 ? issue['IssueNumber'] : parseInt(issue['Issue Number']) // If it's a special enter as is, if normal parse int to number
+          // await db.run(`UPDATE Issues SET modelID = ${magazine.model?.id == undefined ? null : magazine.model.id}, isSpecial = ${magazine.isSpecial}, hasInsert = ${magazine.cardInsert} WHERE issueNumber = "${magazine.issueNumber}"`)
+
+          // Rewrite of the await db.run...for the update. Deprecated with sqlite3 => fastify/better-sqlite
+          const updateIssue = db.prepare(`
+            UPDATE Issues 
+            SET modelId = ?, 
+                isSpecial = ?, 
+                hasInsert = ? 
+            WHERE issueNumber = ?
+          `);
+
+          // .run() takes the arguments in the order of the '?' placeholders
+          updateIssue.run(
+            magazine.model?.id ?? null,   // modelId (uses null-coalescing)
+            magazine.isSpecial ? 1 : 0,   // isSpecial (converted to 1 or 0)
+            magazine.cardInsert ? 1 : 0,  // hasInsert (converted to 1 or 0)
+            magazine.issueNumber          // WHERE clause parameter
+          );
         } catch (error) {
           debugger
         }
@@ -146,7 +160,10 @@ module.exports = {
   getOptions: async () => {
     // We use a try catch block in case of db errors
     try {
-      return await db.all("SELECT * from Choices");
+      /*
+       Why the .prepare()? 
+      In the old library, you passed the SQL string directly into .all(). In the new library, you "prepare" the statement first. This is a bit like compiling code—it makes it much faster if you ever need to run that same query again later in your app's lifecycle. */
+      return db.prepare('SELECT * FROM Choices;').all();
     } catch (dbError) {
       // Database connection error
       console.error(dbError);

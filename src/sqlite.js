@@ -53,19 +53,22 @@ try {
     `).all();
 
     console.log(existingData);
+    let seedDatabase = true;
     try {
 
       const tableTest = db.prepare("SELECT i.issueNumber, m.name AS 'Model name', m.modelCount from Issues i JOIN Models m ON i.modelId = m.id").all();
       if (tableTest.length > 0) {
         // We have items in the table, don't proceed to seed tables.
-        return
+        // This was a return, but it was a breaking bug as would return without setting up the exports below.
+        seedDatabase = false;
       }
-
     } catch (error) {
       console.error(`Error during table test: ${error}`)
     }
-
-    populateTables();
+    // Only run if the table test did not find anything
+    if (seedDatabase) {
+      populateTables();
+    }
   }
 } catch (ex) {
   console.error(ex)
@@ -286,7 +289,17 @@ module.exports = {
     }
   },
 
-  getIssues: async () => {
+  getIssues: (fastify) => {
+    try {
+      const db = fastify.betterSqlite3;
+      const statement = db.prepare(queries.selectAllIssues);
+      return statement.all()
+    } catch (dbError) {
+      // Database connection error
+      console.error(dbError);
+    }
+
+    /* Original code
     // We use a try catch block in case of db errors
     try {
       // The following SQLite query had been optimised to return the smallest possible amount of data, aliasing the table names with letters. For readibility I've reverted them back. The amount of data is 1kb. This could potentially be overcome by GZipping the returned payload instead.
@@ -296,36 +309,40 @@ module.exports = {
       // Database connection error
       console.error(dbError);
     }
+      */
   },
-  getIssue: async (issueNumber) => {
-    const issue = await db.get(queries.selectSingleIssue, [issueNumber])
+  getIssue: (fastify, issueId) => {
+    const db = fastify.betterSqlite3;
+    const issueStatement = db.prepare(queries.selectSingleIssue)
+    const articlesStatement = db.prepare(queries.selectSingleIssueArticles)
 
-    const articles = await db.all(queries.selectSingleIssueArticles, [issueNumber])
-
+    const issue = issueStatement.get(issueId)
+    const articles = articlesStatement.all(issueId)
     return {
       issue: issue,
       articles: articles,
     };
   },
-  getSpecials: async () => {
+  getSpecials: (fastify) => {
     console.log('Getting all Special issues');
-    return await db.all(queries.selectAllIssues + ' where i.isSpecial = 1')
+    const specialsStatement = db.prepare(queries.selectAllIssues + ' where i.isSpecial = 1')
+    return specialsStatement.all()
   },
-  getModels: async () => {
+  getModels: (fastify) => {
     console.info('Getting all models');
-    return await db.all(queries.selectAllModels);
+    return db.prepare(queries.selectAllModels).all();
   },
-  getFactions: async () => {
+  getFactions: (fastify) => {
     console.info('Getting all factions');
-    return await db.all(queries.selectAllFactions);
+    return db.prepare(queries.selectAllFactions).all();
   },
-  getFaction: async (id) => {
+  getFaction: (fastify, id) => {
     console.info('Getting faction with ID: ', id);
-    return await db.all(queries.selectSingleFaction + ` WHERE fa.id = ${id}`);
+    return db.prepare(queries.selectSingleFaction + ` WHERE fa.id = ${id}`).all();
   },
-  getFactionModels: async (factionId) => {
+  getFactionModels: (fastify, factionId) => {
     console.info('Getting all models for faction: ', factionId);
-    return await db.all(queries.selectAllModels + ` WHERE m.factionId = ${factionId}`)
+    return db.prepare(queries.selectAllModels + ` WHERE m.factionId = ${factionId}`).all()
   }
 };
 
